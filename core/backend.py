@@ -43,6 +43,15 @@ class TestCase(db.Model):
     def __repr__(self):
         return '<TestCase %r>' % self.name
 
+class Task(db.Model):
+    __tablename__ = "ronky_task"
+    id = db.Column(db.Integer, primary_key=True)
+    task_name = db.Column(db.String(80), unique=True, nullable=False)
+    status = db.Column(db.Integer, unique=True, nullable=False,default=0)
+
+    def __repr__(self):
+        return '<Task %r>' % self.name
+
 
 class TestCaseApi(Resource):
     @jwt_required
@@ -70,11 +79,11 @@ class TestCaseApi(Resource):
             'msg': 'ok'
         }
 
-    # todo：更新用例
+    # done：更新用例
     @jwt_required
     def put(self, id):
         datas = request.get_json()
-        get_test_case = TestCase.query.filter_by(id).first()
+        get_test_case = TestCase.query.filter_by(id=id).first()
         if not get_test_case:
             print("没有此测试用例")
         if "name" in request.json and not isinstance(request.json['name'], str):
@@ -92,17 +101,20 @@ class TestCaseApi(Resource):
             get_test_case.data = datas['data']
         db.session.add(get_test_case)
         db.session.commit()
-        return make_response(jsonify({"testcase": get_test_case}))
+        return {
+            'msg': 'ok'
+        }
 
-    # todo: 删除用例
+    # done: 删除用例
     @jwt_required
-    def delete(self):
-        get_test_case = TestCase.query.filter_by(id).first()
+    def delete(self, id):
+        get_test_case = TestCase.query.filter_by(id=id).first()
         if not get_test_case:
             return {
+                "errcode":0,
                 "errmsg":"用例不存在不能进行删除"
             }
-        get_test_case.delete()
+        db.session.delete(get_test_case)
         db.session.commit()
         return {"msg":"ok"}
 
@@ -169,9 +181,10 @@ class RegistryApi(Resource):
 
 
 class TaskApi(Resource):
-    # todo: 查询所有的任务
+    # done: 查询所有的任务
     def get(self):
-        pass
+        task = Task.query.all()
+        return {'task':task}
 
     def post(self):
         # todo: 用例获取
@@ -205,7 +218,7 @@ class ReportApi(Resource):
         pass
 
 
-api.add_resource(TestCaseApi, '/testcase')
+api.add_resource(TestCaseApi, '/testcase/<int:id>')
 api.add_resource(LoginApi, '/login')
 api.add_resource(TaskApi, '/task')
 api.add_resource(RegistryApi, '/registry')
